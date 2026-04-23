@@ -1,7 +1,16 @@
 import crypto from 'node:crypto';
 
-const DEFAULT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-me';
-const ENC_KEY = crypto.createHash('sha256').update(process.env.DATA_KEY || 'dev-data-key').digest();
+function getSecret(name, developmentDefault) {
+  const value = process.env[name];
+  if (value) return value;
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error(`${name} must be set in production`);
+  }
+  return developmentDefault;
+}
+
+const DEFAULT_SECRET = getSecret('JWT_SECRET', 'dev-secret-change-me');
+const ENC_KEY = crypto.createHash('sha256').update(getSecret('DATA_KEY', 'dev-data-key')).digest();
 
 export const roles = Object.freeze({
   STUDENT: 'student',
@@ -93,7 +102,7 @@ export function parseJsonBody(req, maxBytes = Number(process.env.MAX_JSON_BODY_B
       data += chunk;
       if (data.length > sizeLimit) {
         req.destroy();
-        fail(new Error('Payload too large'));
+        fail(new Error(`Payload too large (max ${sizeLimit} bytes)`));
       }
     });
     req.on('end', () => {

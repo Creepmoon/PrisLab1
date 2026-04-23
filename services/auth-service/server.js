@@ -5,9 +5,17 @@ import { auditLog, parseJsonBody, roles, sendJson, signToken, verifyToken } from
 const PORT = Number(process.env.PORT || 4001);
 const SECRET = process.env.JWT_SECRET || 'dev-secret-change-me';
 
-const users = new Map([
-  ['admin', { id: 'admin', email: 'admin@edusphere.local', passwordHash: hashPassword('admin123'), role: roles.ADMIN }]
-]);
+const users = new Map();
+if (process.env.ADMIN_BOOTSTRAP_PASSWORD) {
+  users.set('admin', {
+    id: 'admin',
+    email: process.env.ADMIN_BOOTSTRAP_EMAIL || 'admin@edusphere.local',
+    passwordHash: hashPassword(process.env.ADMIN_BOOTSTRAP_PASSWORD),
+    role: roles.ADMIN
+  });
+} else {
+  console.warn('Admin bootstrap account is disabled: set ADMIN_BOOTSTRAP_PASSWORD to enable it.');
+}
 
 function hashPassword(password) {
   const salt = crypto.randomBytes(16).toString('hex');

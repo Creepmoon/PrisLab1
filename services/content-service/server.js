@@ -52,15 +52,39 @@ createServer(async (req, res) => {
     if (!checkRole(role, [roles.STUDENT, roles.TEACHER, roles.ADMIN])) {
       return sendJson(res, 403, { error: 'forbidden' });
     }
+    const page = Math.max(1, Number(url.searchParams.get('page') || 1));
+    const pageSize = Math.min(100, Math.max(1, Number(url.searchParams.get('pageSize') || 20)));
+    const includeContent = url.searchParams.get('includeContent') === 'true';
+    const start = (page - 1) * pageSize;
+    const end = start + pageSize;
     const list = [...materials.values()].map((m) => ({
       id: m.id,
       title: m.title,
       tags: m.tags,
-      content: decryptText(m.contentEncrypted),
+      ...(includeContent ? { content: decryptText(m.contentEncrypted) } : {}),
       authorId: m.authorId,
       visibility: m.visibility
     })).filter((m) => canReadMaterial(role, m.visibility));
-    return sendJson(res, 200, { items: list });
+    return sendJson(res, 200, { items: list.slice(start, end), page, pageSize, total: list.length });
+  }
+
+  if (req.method === 'GET' && url.pathname.startsWith('/materials/') && !url.pathname.endsWith('/export')) {
+    const role = getRole(req);
+    if (!checkRole(role, [roles.STUDENT, roles.TEACHER, roles.ADMIN])) {
+      return sendJson(res, 403, { error: 'forbidden' });
+    }
+    const id = url.pathname.split('/')[2];
+    const material = materials.get(id);
+    if (!material) return sendJson(res, 404, { error: 'material not found' });
+    if (!canReadMaterial(role, material.visibility)) return sendJson(res, 403, { error: 'forbidden' });
+    return sendJson(res, 200, {
+      id: material.id,
+      title: material.title,
+      tags: material.tags,
+      content: decryptText(material.contentEncrypted),
+      authorId: material.authorId,
+      visibility: material.visibility
+    });
   }
 
   if (req.method === 'GET' && url.pathname.startsWith('/materials/') && url.pathname.endsWith('/export')) {

@@ -23,12 +23,20 @@ createServer(async (req, res) => {
   if (req.method === 'POST' && url.pathname === '/plans/generate') {
     const body = await parseJsonBody(req).catch((e) => sendJson(res, 400, { error: e.message }));
     if (!body || res.writableEnded) return;
+    const requesterRole = req.headers['x-user-role'];
+    const requesterId = req.headers['x-user-id'];
+    const studentId = checkRole(requesterRole, [roles.TEACHER, roles.ADMIN])
+      ? (body.studentId || requesterId)
+      : requesterId;
+    if (!studentId) {
+      return sendJson(res, 400, { error: 'studentId is required' });
+    }
 
     const recommendation = generateRecommendations(body);
     const id = `p-${crypto.randomUUID()}`;
     const plan = {
       id,
-      studentId: body.studentId || req.headers['x-user-id'],
+      studentId,
       recommendation,
       approvedByTeacher: false,
       teacherAdjustments: []
