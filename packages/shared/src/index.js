@@ -77,21 +77,33 @@ export function evaluateRecommendationAccuracy(predictions, labels) {
 export function parseJsonBody(req) {
   return new Promise((resolve, reject) => {
     let data = '';
+    let done = false;
+    const fail = (error) => {
+      if (done) return;
+      done = true;
+      reject(error);
+    };
+    const succeed = (value) => {
+      if (done) return;
+      done = true;
+      resolve(value);
+    };
     req.on('data', (chunk) => {
       data += chunk;
       if (data.length > 1_000_000) {
-        reject(new Error('Payload too large'));
+        req.destroy();
+        fail(new Error('Payload too large'));
       }
     });
     req.on('end', () => {
-      if (!data) return resolve({});
+      if (!data) return succeed({});
       try {
-        resolve(JSON.parse(data));
+        succeed(JSON.parse(data));
       } catch {
-        reject(new Error('Invalid JSON body'));
+        fail(new Error('Invalid JSON body'));
       }
     });
-    req.on('error', reject);
+    req.on('error', fail);
   });
 }
 

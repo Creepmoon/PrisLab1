@@ -13,7 +13,8 @@ createServer(async (req, res) => {
   }
 
   if (req.method === 'POST' && url.pathname === '/ar/check-device') {
-    const body = await parseJsonBody(req).catch(() => null);
+    const body = await parseJsonBody(req).catch((e) => sendJson(res, 400, { error: e.message }));
+    if (!body || res.writableEnded) return;
     const fps = Number(body?.fps || 0);
     const latency = Number(body?.latencyMs || 1000);
     const supportsAr = Boolean(body?.arKit || body?.arCore);

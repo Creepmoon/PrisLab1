@@ -6,11 +6,22 @@ const PORT = Number(process.env.PORT || 4001);
 const SECRET = process.env.JWT_SECRET || 'dev-secret-change-me';
 
 const users = new Map([
-  ['admin', { id: 'admin', email: 'admin@edusphere.local', passwordHash: hash('admin123'), role: roles.ADMIN }]
+  ['admin', { id: 'admin', email: 'admin@edusphere.local', passwordHash: hashPassword('admin123'), role: roles.ADMIN }]
 ]);
 
-function hash(input) {
-  return crypto.createHash('sha256').update(input).digest('hex');
+function hashPassword(password) {
+  const salt = crypto.randomBytes(16).toString('hex');
+  const hash = crypto.scryptSync(password, salt, 64).toString('hex');
+  return `${salt}:${hash}`;
+}
+
+function verifyPassword(password, storedHash) {
+  const [salt, existingHash] = (storedHash || '').split(':');
+  if (!salt || !existingHash) return false;
+  const computedHash = crypto.scryptSync(password, salt, 64);
+  const expected = Buffer.from(existingHash, 'hex');
+  if (computedHash.length !== expected.length) return false;
+  return crypto.timingSafeEqual(computedHash, expected);
 }
 
 function getAuthPayload(req) {
@@ -42,7 +53,7 @@ createServer(async (req, res) => {
     }
 
     const id = `u-${crypto.randomUUID()}`;
-    users.set(id, { id, email: body.email, passwordHash: hash(body.password), role: body.role });
+    users.set(id, { id, email: body.email, passwordHash: hashPassword(body.password), role: body.role });
     auditLog('user_registered', { id, role: body.role });
     return sendJson(res, 201, { id, email: body.email, role: body.role });
   }
@@ -50,7 +61,7 @@ createServer(async (req, res) => {
   if (req.method === 'POST' && url.pathname === '/auth/login') {
     const body = await parseJsonBody(req).catch((e) => sendJson(res, 400, { error: e.message }));
     if (!body || res.writableEnded) return;
-    const user = [...users.values()].find((u) => u.email === body.email && u.passwordHash === hash(body.password || ''));
+    const user = [...users.values()].find((u) => u.email === body.email && verifyPassword(body.password || '', u.passwordHash));
     if (!user) return sendJson(res, 401, { error: 'invalid credentials' });
 
     const token = signToken({ userId: user.id, role: user.role }, 3600, SECRET);

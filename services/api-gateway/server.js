@@ -61,9 +61,12 @@ async function forward(req, res, route, pathname) {
     },
     body: ['GET', 'HEAD'].includes(req.method) ? undefined : body,
     signal: AbortSignal.timeout(3000)
-  }).catch(() => null);
+  }).catch((error) => ({ error }));
 
-  if (!response) {
+  if (response?.error) {
+    if (response.error.name === 'TimeoutError') {
+      return sendJson(res, 504, { error: 'request timeout' });
+    }
     return sendJson(res, 503, { error: 'service unavailable' });
   }
 

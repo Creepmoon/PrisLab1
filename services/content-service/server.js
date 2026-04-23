@@ -9,6 +9,13 @@ function getRole(req) {
   return req.headers['x-user-role'];
 }
 
+function canReadMaterial(role, visibility) {
+  if (role === roles.ADMIN) return true;
+  if (visibility === 'admin') return false;
+  if (visibility === 'teacher') return role === roles.TEACHER;
+  return role === roles.STUDENT || role === roles.TEACHER;
+}
+
 createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
 
@@ -32,20 +39,26 @@ createServer(async (req, res) => {
       title: body.title,
       contentEncrypted: encryptText(body.content),
       tags: body.tags || [],
-      authorId: req.headers['x-user-id'] || 'unknown'
+      authorId: req.headers['x-user-id'] || 'unknown',
+      visibility: ['student', 'teacher', 'admin'].includes(body.visibility) ? body.visibility : 'student'
     });
     auditLog('material_created', { id, role });
     return sendJson(res, 201, { id });
   }
 
   if (req.method === 'GET' && url.pathname === '/materials') {
+    const role = getRole(req);
+    if (!checkRole(role, [roles.STUDENT, roles.TEACHER, roles.ADMIN])) {
+      return sendJson(res, 403, { error: 'forbidden' });
+    }
     const list = [...materials.values()].map((m) => ({
       id: m.id,
       title: m.title,
       tags: m.tags,
       content: decryptText(m.contentEncrypted),
-      authorId: m.authorId
-    }));
+      authorId: m.authorId,
+      visibility: m.visibility
+    })).filter((m) => canReadMaterial(role, m.visibility));
     return sendJson(res, 200, { items: list });
   }
 
