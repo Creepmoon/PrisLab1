@@ -13,7 +13,8 @@ function canReadMaterial(role, visibility) {
   if (role === roles.ADMIN) return true;
   if (visibility === 'admin') return false;
   if (visibility === 'teacher') return role === roles.TEACHER;
-  return role === roles.STUDENT || role === roles.TEACHER;
+  if (visibility === 'student') return role === roles.STUDENT || role === roles.TEACHER;
+  return false;
 }
 
 createServer(async (req, res) => {

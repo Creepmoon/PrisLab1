@@ -74,7 +74,8 @@ export function evaluateRecommendationAccuracy(predictions, labels) {
   return Number(((correct / predictions.length) * 100).toFixed(2));
 }
 
-export function parseJsonBody(req) {
+export function parseJsonBody(req, maxBytes = Number(process.env.MAX_JSON_BODY_BYTES || 1_000_000)) {
+  const sizeLimit = Number.isFinite(maxBytes) && maxBytes > 0 ? maxBytes : 1_000_000;
   return new Promise((resolve, reject) => {
     let data = '';
     let done = false;
@@ -90,7 +91,7 @@ export function parseJsonBody(req) {
     };
     req.on('data', (chunk) => {
       data += chunk;
-      if (data.length > 1_000_000) {
+      if (data.length > sizeLimit) {
         req.destroy();
         fail(new Error('Payload too large'));
       }

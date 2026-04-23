@@ -29,6 +29,9 @@ createServer(async (req, res) => {
   if (req.method === 'POST' && url.pathname === '/ar/sessions') {
     const body = await parseJsonBody(req).catch((e) => sendJson(res, 400, { error: e.message }));
     if (!body || res.writableEnded) return;
+    if (!body.classId || typeof body.classId !== 'string') {
+      return sendJson(res, 400, { error: 'classId is required' });
+    }
 
     const id = `ar-${crypto.randomUUID()}`;
     const session = {
