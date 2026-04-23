@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
 
-function getSecret(name, developmentDefault) {
+export function getSecret(name, developmentDefault) {
   const value = process.env[name];
   if (value) return value;
   if (process.env.NODE_ENV === 'production') {
@@ -62,11 +62,19 @@ export function decryptText(cipherText) {
 
 export function generateRecommendations({ preferences = [], weakSkills = [], targetHours = 6 }) {
   const topics = [...new Set([...preferences, ...weakSkills])].slice(0, 6);
-  const plan = topics.map((topic, index) => ({
-    topic,
-    weeklyHours: Math.max(1, Math.round(targetHours / Math.max(1, topics.length))),
-    difficulty: weakSkills.includes(topic) ? 'foundation' : index > 2 ? 'advanced' : 'intermediate'
-  }));
+  const normalizedTarget = Math.max(1, Number(targetHours) || 1);
+  const baseHours = topics.length ? Math.floor(normalizedTarget / topics.length) : 0;
+  let remainder = topics.length ? normalizedTarget - (baseHours * topics.length) : 0;
+
+  const plan = topics.map((topic, index) => {
+    const extra = remainder > 0 ? 1 : 0;
+    remainder = Math.max(0, remainder - 1);
+    return {
+      topic,
+      weeklyHours: Math.max(1, baseHours + extra),
+      difficulty: weakSkills.includes(topic) ? 'foundation' : index > 2 ? 'advanced' : 'intermediate'
+    };
+  });
 
   return {
     confidence: Math.min(0.99, 0.7 + topics.length * 0.05),

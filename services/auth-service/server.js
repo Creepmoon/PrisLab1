@@ -1,9 +1,9 @@
 import { createServer } from 'node:http';
 import crypto from 'node:crypto';
-import { auditLog, parseJsonBody, roles, sendJson, signToken, verifyToken } from '@edusphere/shared';
+import { auditLog, getSecret, parseJsonBody, roles, sendJson, signToken, verifyToken } from '@edusphere/shared';
 
 const PORT = Number(process.env.PORT || 4001);
-const SECRET = process.env.JWT_SECRET || 'dev-secret-change-me';
+const SECRET = getSecret('JWT_SECRET', 'dev-secret-change-me');
 
 const users = new Map();
 if (process.env.ADMIN_BOOTSTRAP_PASSWORD) {

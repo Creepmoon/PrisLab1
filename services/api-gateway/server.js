@@ -1,8 +1,9 @@
 import { createServer } from 'node:http';
-import { auditLog, sendJson, verifyToken } from '@edusphere/shared';
+import { auditLog, getSecret, sendJson, verifyToken } from '@edusphere/shared';
 
 const PORT = Number(process.env.PORT || 4000);
-const SECRET = process.env.JWT_SECRET || 'dev-secret-change-me';
+const SECRET = getSecret('JWT_SECRET', 'dev-secret-change-me');
+const REQUEST_TIMEOUT_MS = Number(process.env.REQUEST_TIMEOUT_MS || 3000);
 
 const routes = [
   { prefix: '/auth', target: process.env.AUTH_SERVICE_URL || 'http://localhost:4001', publicPaths: ['/auth/login', '/auth/register'] },
@@ -60,7 +61,7 @@ async function forward(req, res, route, pathname) {
       'x-user-role': payload?.role || ''
     },
     body: ['GET', 'HEAD'].includes(req.method) ? undefined : body,
-    signal: AbortSignal.timeout(3000)
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS)
   }).catch((error) => ({ error }));
 
   if (response?.error) {

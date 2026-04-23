@@ -6,7 +6,7 @@ services:
     command: npm run start --workspace services/api-gateway
     environment:
       - PORT=4000
-      - JWT_SECRET=dev-secret-change-me
+      - JWT_SECRET=${JWT_SECRET:?set JWT_SECRET}
       - AUTH_SERVICE_URL=http://auth-service:4001
       - CONTENT_SERVICE_URL=http://content-service:4002
       - GRADEBOOK_SERVICE_URL=http://gradebook-service:4003
@@ -21,7 +21,7 @@ services:
     working_dir: /workspace
     volumes: ["../../:/workspace"]
     command: npm run start --workspace services/auth-service
-    environment: ["PORT=4001", "JWT_SECRET=dev-secret-change-me"]
+    environment: ["PORT=4001", "JWT_SECRET=${JWT_SECRET:?set JWT_SECRET}"]
 
   content-service:
     image: node:20-alpine

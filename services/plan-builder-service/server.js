@@ -56,7 +56,7 @@ createServer(async (req, res) => {
     const body = await parseJsonBody(req).catch((e) => sendJson(res, 400, { error: e.message }));
     if (!body || res.writableEnded) return;
 
-    plan.approvedByTeacher = true;
+    plan.approvedByTeacher = body.approved !== false;
     plan.teacherAdjustments = body.adjustments || [];
     auditLog('plan_reviewed', { id, reviewer: req.headers['x-user-id'] });
     return sendJson(res, 200, plan);
