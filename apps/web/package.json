@@ -1,0 +1,12 @@
+{
+  "name": "@edusphere/web",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "lint": "node --check server.js",
+    "build": "node --check server.js",
+    "test": "node --test"
+  }
+}

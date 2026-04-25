@@ -1,0 +1,83 @@
+services:
+  api-gateway:
+    image: node:20-alpine
+    working_dir: /workspace
+    volumes: ["../../:/workspace"]
+    command: npm run start --workspace services/api-gateway
+    environment:
+      - PORT=4000
+      - JWT_SECRET=${JWT_SECRET:?set JWT_SECRET}
+      - AUTH_SERVICE_URL=http://auth-service:4001
+      - CONTENT_SERVICE_URL=http://content-service:4002
+      - GRADEBOOK_SERVICE_URL=http://gradebook-service:4003
+      - PLAN_SERVICE_URL=http://plan-builder-service:4004
+      - ANALYTICS_SERVICE_URL=http://analytics-service:4005
+      - AR_SERVICE_URL=http://ar-session-service:4006
+    ports: ["4000:4000"]
+    depends_on: [auth-service, content-service, gradebook-service, plan-builder-service, analytics-service, ar-session-service]
+
+  auth-service:
+    image: node:20-alpine
+    working_dir: /workspace
+    volumes: ["../../:/workspace"]
+    command: npm run start --workspace services/auth-service
+    environment: ["PORT=4001", "JWT_SECRET=${JWT_SECRET:?set JWT_SECRET}"]
+
+  content-service:
+    image: node:20-alpine
+    working_dir: /workspace
+    volumes: ["../../:/workspace"]
+    command: npm run start --workspace services/content-service
+    environment: ["PORT=4002", "DATA_KEY=dev-data-key"]
+
+  gradebook-service:
+    image: node:20-alpine
+    working_dir: /workspace
+    volumes: ["../../:/workspace"]
+    command: npm run start --workspace services/gradebook-service
+    environment: ["PORT=4003"]
+
+  plan-builder-service:
+    image: node:20-alpine
+    working_dir: /workspace
+    volumes: ["../../:/workspace"]
+    command: npm run start --workspace services/plan-builder-service
+    environment: ["PORT=4004"]
+
+  analytics-service:
+    image: node:20-alpine
+    working_dir: /workspace
+    volumes: ["../../:/workspace"]
+    command: npm run start --workspace services/analytics-service
+    environment: ["PORT=4005"]
+
+  ar-session-service:
+    image: node:20-alpine
+    working_dir: /workspace
+    volumes: ["../../:/workspace"]
+    command: npm run start --workspace services/ar-session-service
+    environment: ["PORT=4006"]
+
+  web:
+    image: node:20-alpine
+    working_dir: /workspace
+    volumes: ["../../:/workspace"]
+    command: npm run start --workspace apps/web
+    environment: ["PORT=3000"]
+    ports: ["3000:3000"]
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: edusphere
+      POSTGRES_USER: edusphere
+      POSTGRES_PASSWORD: edusphere
+    ports: ["5432:5432"]
+
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    ports: ["5672:5672", "15672:15672"]

@@ -1,0 +1,15 @@
+global:
+  scrape_interval: 15s
+scrape_configs:
+  - job_name: 'edusphere-api-gateway'
+    static_configs:
+      - targets: ['api-gateway:4000']
+  - job_name: 'edusphere-services'
+    static_configs:
+      - targets:
+          - 'auth-service:4001'
+          - 'content-service:4002'
+          - 'gradebook-service:4003'
+          - 'plan-builder-service:4004'
+          - 'analytics-service:4005'
+          - 'ar-session-service:4006'
